@@ -2,17 +2,29 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
   			  android:id="@+id/appLayout"
   			  android:layout_width="fill_parent"
-  			  android:layout_height="wrap_content">
+  			  android:layout_height="wrap_content"
+  			  android:descendantFocusability="blocksDescendants">
   			  
   <!-- TODO: Fill out remaining attributes of CheckBox, TextView and RatingBar -->
   <CheckBox android:id="@+id/installedCheckbox"
 			android:layout_width="wrap_content"
-			android:layout_height="wrap_content" />
+			android:layout_height="wrap_content"
+			android:layout_alignParentRight="true"
+			android:layout_alignParentTop="true"
+			android:clickable="false" />
   <TextView	android:id="@+id/appName"
     		android:layout_width="wrap_content"
     		android:layout_height="wrap_content"
-    		android:textIsSelectable="false" />
+    		android:textIsSelectable="false"
+    		android:text="@string/sample_app_name"
+			android:textStyle="bold"
+			android:textSize="@dimen/app_text_size"/>
   <RatingBar android:id="@+id/appRatingBar"
       		 android:layout_width="wrap_content"
-      		 android:layout_height="fill_parent"/>
+      		 android:layout_height="fill_parent"
+      		 android:layout_centerHorizontal="true"
+      		 android:paddingTop="20sp"
+      		 android:isIndicator="false"
+      		 android:stepSize="1"
+      		 android:rating="5" />
 </RelativeLayout>
