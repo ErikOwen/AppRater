@@ -3,7 +3,7 @@
   			  android:id="@+id/appLayout"
   			  android:layout_width="fill_parent"
   			  android:layout_height="wrap_content"
-  			  android:descendantFocusability="blocksDescendants">
+  			  android:descendantFocusability="blocksDescendants" >
   			  
   <!-- TODO: Fill out remaining attributes of CheckBox, TextView and RatingBar -->
   <CheckBox android:id="@+id/installedCheckbox"
@@ -25,6 +25,6 @@
       		 android:layout_centerHorizontal="true"
       		 android:paddingTop="20sp"
       		 android:isIndicator="false"
-      		 android:stepSize="1"
-      		 android:rating="5" />
+      		 android:stepSize="1.0"
+      		 android:numStars="5" />
 </RelativeLayout>

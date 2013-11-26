@@ -14,6 +14,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.view.Menu;
@@ -82,7 +83,20 @@ public class AppRater extends SherlockFragmentActivity implements OnAppChangeLis
     
     @Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-    	//TODO
+    	if (item.getItemId() == R.id.menu_startDownload) {
+    		//Toast.makeText(this, "Start Download button pressed.", Toast.LENGTH_LONG).show();
+    		Intent downloadIntent = new Intent(this, AppDownloadService.class);
+    		startService(downloadIntent);
+    	}
+    	else if (item.getItemId() == R.id.menu_stopDownload) {
+    		Intent stopDownloadIntent = new Intent(this, AppDownloadService.class);
+    		stopService(stopDownloadIntent);
+    	}
+    	else if (item.getItemId() == R.id.menu_removeAll) {
+    		Uri removeAllAppsUri = Uri.parse(AppContentProvider.CONTENT_URI + "/apps");
+    		getContentResolver().delete(removeAllAppsUri, null, null);
+    	}
+    	
     	return super.onOptionsItemSelected(item);
     }
 
@@ -138,7 +152,7 @@ public class AppRater extends SherlockFragmentActivity implements OnAppChangeLis
 	 */
 	public void fillData() {
 		this.getSupportLoaderManager().restartLoader(LOADER_ID, null, this);
-		//TODO
+		this.m_appAdapter.notifyDataSetChanged();
 	}
 	
 	/**

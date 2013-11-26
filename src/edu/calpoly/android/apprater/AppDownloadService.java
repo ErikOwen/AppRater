@@ -1,13 +1,27 @@
 package edu.calpoly.android.apprater;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.Bundle;
+import android.util.Log;
+import android.widget.Toast;
 
 /**
  * The Service that performs app information downloading, performing the check again
  * occasionally over time. It adds an application to the list of apps and is also
  * responsible for telling the BroadcastReceiver when it has done so.
  */
-public class AppDownloadService {
+public class AppDownloadService extends android.app.IntentService {
 
 	/** The ID for the Notification that is generated when a new App is added. */
 	public static final int NEW_APP_NOTIFICATION_ID = 1;
@@ -32,9 +46,28 @@ public class AppDownloadService {
 	 * contains the name of the service to the super() call.
 	 */
 	public AppDownloadService() {
-		//TODO
+		super("AppDownloadService");
 	}
 
+	@Override
+	public void onCreate() {
+		this.m_updateTimer = new Timer();
+		this.m_updateTask = new TimerTask() {
+			@Override
+			public void run() {
+				getAppsFromServer();
+			}
+		};
+		
+		super.onCreate();
+	}
+	
+	@Override
+	public void onDestroy() {
+		this.m_updateTimer.cancel();
+		super.onDestroy();
+	}
+	
 	/**
 	 * This method downloads all of the Apps from the App server. For each App,
 	 * it checks the AppContentProvider to see if it has already been downloaded
@@ -42,7 +75,31 @@ public class AppDownloadService {
 	 * calling addNewApp.
 	 */
 	private void getAppsFromServer() {
-		//TODO
+		try {
+			URL url = new URL(GET_APPS_URL);
+			Scanner scan = new Scanner(url.openStream());
+			scan.useDelimiter(";");
+			
+			while (scan.hasNext()) {
+				String appInfo = scan.next();
+				if (appInfo.length() > 1) {
+					String appName = appInfo.substring(0, appInfo.indexOf(","));
+					String appInstall = appInfo.substring(appInfo.indexOf(',') + 1);
+					
+					Log.w("edu.calpoly.android.apprater", "appName is: " + appName);
+					Log.w("edu.calpoly.android.apprater", "appInstall is: " + appInstall);
+					
+					addNewApp(new App(appName, appInstall));
+				}
+			}
+			
+		}
+		catch (MalformedURLException e) {
+			Log.w("edu.calpoly.android.apprater", e.getMessage());
+		}
+		catch (IOException e) {
+			Log.w("edu.calpoly.android.apprater", e.getMessage());
+		}
 	}
 
 	/**
@@ -52,7 +109,32 @@ public class AppDownloadService {
 	 *            The new App object to add to the ContentProvider.
 	 */
 	private void addNewApp(App app) {
-		//TODO
+		ContentResolver resolver = getContentResolver();
+		Uri uri = Uri.parse(AppContentProvider.CONTENT_URI + "/apps/" + app.getName());
+		String [] projection = {AppTable.APP_KEY_NAME, AppTable.APP_KEY_INSTALLED};
+		Cursor cursor = resolver.query(uri, projection, null, null, null);
+		
+		if(cursor.getCount() == 0) {
+			ContentValues values = new ContentValues();
+			values.put(AppTable.APP_KEY_NAME, app.getName());
+			values.put(AppTable.APP_KEY_RATING, app.getRating());
+			values.put(AppTable.APP_KEY_INSTALLURI, app.getInstallURI());
+			if (app.isInstalled()) {
+				values.put(AppTable.APP_KEY_INSTALLED, 1);
+			}
+			else {
+				values.put(AppTable.APP_KEY_INSTALLED, 0);
+			}
+			
+			Uri toInsertUri = Uri.parse(AppContentProvider.CONTENT_URI + "/apps/" + app.getID());
+			Uri insertionResultUri = resolver.insert(toInsertUri, values);
+			
+			app.setID(Long.valueOf(insertionResultUri.getLastPathSegment()));
+			
+			announceNewApp();
+			
+			cursor.close();
+		}
 	}
 
 	/**
@@ -60,6 +142,14 @@ public class AppDownloadService {
 	 * called when a new App has been downloaded and added successfully.
 	 */
 	private void announceNewApp() {
-		//TODO
+		Intent newAppIntent = new Intent(AppRater.DownloadCompleteReceiver.ACTION_NEW_APP_TO_REVIEW);
+		newAppIntent.addCategory(Intent.CATEGORY_DEFAULT);
+		sendBroadcast(newAppIntent);
+	}
+
+	@Override
+	protected void onHandleIntent(Intent intent) {
+		this.m_updateTimer.scheduleAtFixedRate(this.m_updateTask, 0, UPDATE_FREQUENCY);
+		
 	}
 }

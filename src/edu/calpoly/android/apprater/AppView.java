@@ -4,9 +4,11 @@ import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.widget.CheckBox;
 import android.widget.RatingBar;
+import android.widget.Toast;
 import android.widget.RatingBar.OnRatingBarChangeListener;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -52,6 +54,7 @@ public class AppView extends RelativeLayout implements OnRatingBarChangeListener
 		setApp(app);
 		
 		this.m_onAppChangeListener = null;
+		this.m_vwAppRatingBar.setOnRatingBarChangeListener(this);
 	}
 	
 	public App getApp() {
@@ -61,12 +64,38 @@ public class AppView extends RelativeLayout implements OnRatingBarChangeListener
 	public void setApp(App app) {
 		this.m_app = app;
 		PackageManager manager = this.context.getPackageManager();
-		String packageName = this.m_app.getInstallURI().substring(this.m_app.getInstallURI().indexOf("=") + 1, this.m_app.getInstallURI().indexOf(";")); 
-		this.m_vwAppName.setText(this.m_app.getName());
+		Log.w("edu.calpoly.android.apprater", "getInstallUri is: " + this.m_app.getInstallURI());
+		String packageName = this.m_app.getInstallURI().substring(this.m_app.getInstallURI().indexOf("=") + 1);
 		try {
 			PackageInfo info = manager.getPackageInfo(packageName, PackageManager.GET_ACTIVITIES);
 			this.m_app.setInstalled(true);
 			this.m_vwInstalledCheckBox.setChecked(true);
+		}
+		catch (NameNotFoundException e) {
+			this.m_app.setInstalled(false);
+			this.m_vwInstalledCheckBox.setChecked(false);
+		}
+		notifyOnAppChangeListener();
+		this.m_vwAppName.setText(this.m_app.getName());
+		
+		if (!this.m_app.isInstalled()) {
+			this.m_vwContainer.setBackgroundColor(getResources().getColor(R.color.new_app));
+		}
+		else {
+			if (this.m_app.getRating() == 0) {
+				this.m_vwContainer.setBackgroundColor(getResources().getColor(R.color.installed_app));
+			}
+			else {
+				this.m_vwContainer.setBackgroundColor(getResources().getColor(R.color.rated_app));
+			}
+		}
+		
+		this.m_vwAppRatingBar.setRating(this.m_app.getRating());
+		/*try {
+			PackageInfo info = manager.getPackageInfo(packageName, PackageManager.GET_ACTIVITIES);
+			this.m_app.setInstalled(true);
+			this.m_vwInstalledCheckBox.setChecked(true);
+			this.m_vwAppRatingBar.setIsIndicator(false);
 			this.m_vwAppRatingBar.setRating(this.m_app.getRating());
 			
 			if (this.m_app.getRating() == 0) {
@@ -79,11 +108,12 @@ public class AppView extends RelativeLayout implements OnRatingBarChangeListener
 		}
 		catch (NameNotFoundException e) {
 			this.m_app.setInstalled(false);
+			this.m_vwAppRatingBar.setIsIndicator(false);
 			this.m_vwAppRatingBar.setRating(0);
-			this.m_vwAppRatingBar.setIsIndicator(true);
 			this.m_vwInstalledCheckBox.setChecked(false);
 			this.m_vwContainer.setBackgroundColor(getResources().getColor(R.color.new_app));
-		}
+		}*/
+		
 		this.notifyOnAppChangeListener();
 	}
 	
@@ -134,6 +164,8 @@ public class AppView extends RelativeLayout implements OnRatingBarChangeListener
 	@Override
 	public void onRatingChanged(RatingBar bar, float rating, boolean fromUser) {
 		this.m_app.setRating(rating);
+		//this.m_vwAppRatingBar.setRating(rating);
+		//Toast.makeText(getContext(), "Rating button changed", Toast.LENGTH_LONG).show();
 		notifyOnAppChangeListener();
 		
 	}
