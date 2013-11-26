@@ -1,13 +1,20 @@
 package edu.calpoly.android.apprater;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationCompat.Builder;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.view.View;
@@ -59,19 +66,40 @@ public class AppRater extends SherlockFragmentActivity implements OnAppChangeLis
     
     @Override
     public void onResume() {
-    	//TODO
+    	IntentFilter filter = new IntentFilter(DownloadCompleteReceiver.ACTION_NEW_APP_TO_REVIEW);
+    	filter.addCategory(Intent.CATEGORY_DEFAULT);
+    	this.m_receiver = new DownloadCompleteReceiver();
+    	registerReceiver(this.m_receiver, filter);
+    	
+    	fillData();
+    	
     	super.onResume();
     }
     
     @Override
     public void onPause() {
-    	//TODO
+    	unregisterReceiver(this.m_receiver);
+    	
     	super.onPause();
     }
 	
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {		
-		//TODO
+		App clickedApp = ((AppView) view).getApp();
+		
+		if (clickedApp.isInstalled() == false) {
+			Intent playStoreIntent = new Intent(Intent.ACTION_VIEW);
+			String installAppUri = clickedApp.getInstallURI();
+			playStoreIntent.setData(Uri.parse(installAppUri));
+			startActivityForResult(playStoreIntent, MARKET_REQUEST_CODE);
+		}
+	}
+	
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (requestCode == MARKET_REQUEST_CODE) {
+			fillData();
+		}
 	}
     
     @Override
@@ -166,7 +194,11 @@ public class AppRater extends SherlockFragmentActivity implements OnAppChangeLis
 		
 		@Override
 		public void onReceive(Context context, Intent intent) {
-			//TODO
+			if(intent.getAction().equals(ACTION_NEW_APP_TO_REVIEW)) {
+				//Toast.makeText(getBaseContext(), getResources().getString(R.string.newAppToast), Toast.LENGTH_LONG).show();
+				fillData();
+				showNotification(getBaseContext());
+			}
 		}
 
 		/**
@@ -176,7 +208,20 @@ public class AppRater extends SherlockFragmentActivity implements OnAppChangeLis
 		 * 					The context this receiver runs in. 
 		 */
 		private void showNotification(Context context) {
-			//TODO
+			Resources resource = getResources();
+			PendingIntent pendingIntent = PendingIntent.getActivity(context, 0, new Intent(context, AppRater.class), 0);
+			NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
+			builder.setContentTitle(resource.getString(R.string.newAppNotificationOriginName));
+			builder.setContentText(resource.getString(R.string.newAppNotificationText));
+			builder.setTicker(resource.getString(R.string.newAppNotificationTicker));
+			builder.setSmallIcon(R.drawable.icon);
+			
+			builder.setContentIntent(pendingIntent);
+			builder.setAutoCancel(true);
+			builder.setDefaults(Notification.DEFAULT_ALL);
+			
+			NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+			manager.notify(0, builder.build());
 		}
 	}
 }
